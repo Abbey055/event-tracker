@@ -18,10 +18,10 @@ export default function Welcome() {
             <div className="relative flex min-h-svh flex-col overflow-hidden bg-[#040a2a] text-white">
                 <div className="pointer-events-none absolute inset-0 bg-[url('/bg.png')] bg-cover bg-center opacity-60" />
                 <div className="pointer-events-none absolute inset-0 bg-[#050833]/55" />
-                <div className="pointer-events-none absolute inset-x-0 top-[18%] h-[17%] bg-[#050833]" />
-                <div className="pointer-events-none absolute inset-x-0 top-[37%] h-[12%] bg-[#050833]" />
-                <div className="pointer-events-none absolute inset-x-0 top-[51%] h-[18%] bg-[#050833]" />
-                <div className="pointer-events-none absolute inset-x-0 top-[69%] h-[14%] bg-[#050833]" />
+                <div className="pointer-events-none absolute inset-x-0 top-[17%] h-[23%] bg-[#050833]" />
+                <div className="pointer-events-none absolute inset-x-0 top-[40%] h-[15%] bg-[#050833]" />
+                <div className="pointer-events-none absolute inset-x-0 top-[55%] h-[20%] bg-[#050833]" />
+                <div className="pointer-events-none absolute inset-x-0 top-[75%] h-[13%] bg-[#050833]" />
                 <header className="relative z-10 border-b border-white/10 bg-[#050b2c]/75 backdrop-blur-md">
                     <div className="mx-auto flex w-full max-w-7xl items-center justify-between px-5 py-3 sm:px-8 lg:px-10">
                         <Link href="/" className="flex items-center gap-3"><span className="flex size-10 items-center justify-center overflow-hidden rounded-full border border-violet-300/30 bg-violet-500/15 p-1.5"><img src="/Event%20Tracker.png" alt="Event Tracker" className="size-full object-contain" /></span><span className="text-lg font-semibold tracking-tight sm:text-xl">Event Tracker</span></Link>
