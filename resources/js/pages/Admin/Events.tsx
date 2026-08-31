@@ -94,9 +94,9 @@ export default function Events({ events }: Props) {
         image: null as File | null,
         video: null as File | null,
         ticket_categories: [
-            { name: 'VIP', price: '' },
-            { name: 'Ordinary', price: '' },
-            { name: 'VVIP', price: '' },
+            { name: 'VIP', price: 0 },
+            { name: 'Ordinary', price: 0 },
+            { name: 'VVIP', price: 0 },
         ],
     });
 
@@ -120,10 +120,10 @@ export default function Events({ events }: Props) {
             video_url: event.video_url ?? '',
             image: null,
             video: null,
-            ticket_categories: event.ticket_categories?.length ? event.ticket_categories.map((category) => ({ name: category.name, price: String(category.price) })) : [
-                { name: 'VIP', price: '' },
-                { name: 'Ordinary', price: '' },
-                { name: 'VVIP', price: '' },
+            ticket_categories: event.ticket_categories?.length ? event.ticket_categories.map((category) => ({ name: category.name, price: Number(category.price) })) : [
+                { name: 'VIP', price: 0 },
+                { name: 'Ordinary', price: 0 },
+                { name: 'VVIP', price: 0 },
             ],
         });
         setShowDialog(true);
@@ -262,7 +262,7 @@ export default function Events({ events }: Props) {
                                     {data.ticket_categories.map((category, index) => (
                                         <div key={category.name} className="space-y-1.5">
                                             <Label htmlFor={`ticket-category-${category.name}`} className="text-xs text-muted-foreground">{category.name}</Label>
-                                            <Input id={`ticket-category-${category.name}`} type="number" min="0" placeholder="0 for free" value={category.price} onChange={(event) => setData('ticket_categories', data.ticket_categories.map((item, itemIndex) => itemIndex === index ? { ...item, price: event.target.value } : item))} />
+                                            <Input id={`ticket-category-${category.name}`} type="number" min="0" placeholder="0 for free" value={category.price} onChange={(event) => setData('ticket_categories', data.ticket_categories.map((item, itemIndex) => itemIndex === index ? { ...item, price: Number(event.target.value) || 0 } : item))} />
                                         </div>
                                     ))}
                                 </div>
