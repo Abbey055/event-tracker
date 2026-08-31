@@ -24,6 +24,29 @@ class Event extends Model
         'ticket_categories' => 'array',
     ];
 
+    public function getImageUrlAttribute(?string $value): ?string
+    {
+        return $this->normalizeMediaUrl($value);
+    }
+
+    public function getVideoUrlAttribute(?string $value): ?string
+    {
+        return $this->normalizeMediaUrl($value);
+    }
+
+    private function normalizeMediaUrl(?string $value): ?string
+    {
+        if (!$value) {
+            return null;
+        }
+
+        $path = parse_url($value, PHP_URL_PATH);
+
+        return $path && str_contains($path, '/storage/')
+            ? substr($path, strpos($path, '/storage/'))
+            : $value;
+    }
+
     public function tickets()
     {
         return $this->hasMany(Ticket::class);

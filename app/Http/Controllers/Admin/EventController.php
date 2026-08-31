@@ -118,15 +118,13 @@ class EventController extends Controller
     private function storeUploads(Request $request, array $validated): array
     {
         if ($request->hasFile('image')) {
-            $validated['image_url'] = Storage::disk('public')->url(
-                $request->file('image')->store('events/images', 'public')
-            );
+            $path = $request->file('image')->store('events/images', 'public');
+            $validated['image_url'] = '/storage/'.$path;
         }
 
         if ($request->hasFile('video')) {
-            $validated['video_url'] = Storage::disk('public')->url(
-                $request->file('video')->store('events/videos', 'public')
-            );
+            $path = $request->file('video')->store('events/videos', 'public');
+            $validated['video_url'] = '/storage/'.$path;
         }
 
         unset($validated['image'], $validated['video']);
