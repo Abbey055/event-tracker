@@ -122,25 +122,40 @@ class TicketController extends Controller
     ]);
 
     if ($price > 0) {
-        $payment = Http::withToken((string) config('services.flutterwave.secret_key'))
+        $payment = Http::withToken($this->pesapalToken())
             ->acceptJson()
             ->timeout(20)
-            ->post('https://api.flutterwave.com/v3/payments', [
-                'tx_ref' => $transactionRef,
+            ->post($this->pesapalUrl('/api/Transactions/SubmitOrderRequest'), [
+                'id' => $transactionRef,
                 'amount' => $price,
-                'currency' => config('services.flutterwave.currency', 'UGX'),
-                'redirect_url' => route('tickets.payment.callback'),
-                'customer' => ['email' => $user->email, 'name' => $user->name],
-                'customizations' => ['title' => $event->name, 'description' => ($selectedCategory['name'] ?? 'Ordinary').' ticket'],
-                'meta' => ['ticket_id' => $ticket->id],
+                'currency' => config('services.pesapal.currency', 'UGX'),
+                'description' => substr($event->name.' - '.($selectedCategory['name'] ?? 'Ordinary').' ticket', 0, 100),
+                'callback_url' => route('tickets.payment.callback'),
+                'cancellation_url' => route('tickets.payment.callback'),
+                'notification_id' => config('services.pesapal.ipn_id'),
+                'billing_address' => [
+                    'email_address' => $user->email,
+                    'phone_number' => '',
+                    'country_code' => 'UG',
+                    'first_name' => $user->name,
+                    'middle_name' => '',
+                    'last_name' => '',
+                    'line_1' => '',
+                    'line_2' => '',
+                    'city' => '',
+                    'state' => '',
+                    'postal_code' => '',
+                    'zip_code' => '',
+                ],
             ]);
 
-        if ($payment->failed() || ! $payment->json('data.link')) {
+        if ($payment->failed() || ! $payment->json('redirect_url')) {
             $ticket->delete();
             return back()->with('error', 'We could not start the payment. Please try again.');
         }
 
-        return Inertia::location($payment->json('data.link'));
+        $ticket->update(['transaction_id' => $payment->json('order_tracking_id')]);
+        return Inertia::location($payment->json('redirect_url'));
     }
 
     $remainingTickets = $event->capacity === null
@@ -172,53 +187,65 @@ class TicketController extends Controller
 
   public function paymentCallback(Request $request)
   {
-      $ticket = Ticket::where('transaction_ref', $request->string('tx_ref')->toString())->first();
+      $ticket = Ticket::where('transaction_ref', $request->string('OrderMerchantReference')->toString())->first();
+      $trackingId = $request->string('OrderTrackingId')->toString();
 
-      if (! $ticket || $ticket->user_id !== auth()->id() || ! $request->integer('transaction_id')) {
+      if (! $ticket || $trackingId === '') {
           return redirect()->route('tickets.index')->with('error', 'We could not confirm that payment.');
       }
 
-      if ($request->string('status')->toString() !== 'successful') {
-          $ticket->update(['payment_status' => 'failed', 'status' => 'payment_failed']);
-          return redirect()->route('tickets.index')->with('error', 'Payment was not completed.');
-      }
-
-      if ($this->confirmPayment($ticket, $request->integer('transaction_id'))) {
+      if ($this->confirmPayment($ticket, $trackingId)) {
           return redirect()->route('tickets.index')->with('success', 'Payment confirmed. Your ticket is ready.');
       }
 
       return redirect()->route('tickets.index')->with('error', 'Payment could not be verified. Please contact support.');
   }
 
-  public function paymentWebhook(Request $request)
+  public function paymentIpn(Request $request)
   {
-      $signature = (string) $request->header('flutterwave-signature');
-      $expected = base64_encode(hash_hmac('sha256', $request->getContent(), (string) config('services.flutterwave.secret_hash'), true));
-      abort_unless($signature !== '' && hash_equals($expected, $signature), 401);
+      $reference = $request->string('OrderMerchantReference')->toString();
+      $trackingId = $request->string('OrderTrackingId')->toString();
+      $ticket = Ticket::where('transaction_ref', $reference)->first();
 
-      $ticket = Ticket::where('transaction_ref', (string) $request->input('data.tx_ref'))->first();
-      $transactionId = $request->integer('data.id');
-      if ($ticket && $transactionId) {
-          $this->confirmPayment($ticket, $transactionId);
+      if ($ticket && $trackingId !== '') {
+          $this->confirmPayment($ticket, $trackingId);
       }
 
-      return response()->json(['received' => true]);
+      return response()->json(['orderNotificationType' => 'IPNCHANGE', 'orderTrackingId' => $trackingId, 'orderMerchantReference' => $reference, 'status' => 200]);
   }
 
-  private function confirmPayment(Ticket $ticket, int $transactionId): bool
+  private function pesapalToken(): string
   {
-      $response = Http::withToken((string) config('services.flutterwave.secret_key'))
+      $response = Http::acceptJson()->timeout(20)->post($this->pesapalUrl('/api/Auth/RequestToken'), [
+          'consumer_key' => config('services.pesapal.consumer_key'),
+          'consumer_secret' => config('services.pesapal.consumer_secret'),
+      ]);
+      abort_unless($response->successful() && $response->json('token'), 503, 'Payment service is not configured.');
+      return (string) $response->json('token');
+  }
+
+  private function pesapalUrl(string $path): string
+  {
+      $base = config('services.pesapal.environment') === 'live'
+          ? 'https://pay.pesapal.com/v3'
+          : 'https://cybqa.pesapal.com/pesapalv3';
+      return rtrim($base, '/').'/'.ltrim($path, '/');
+  }
+
+  private function confirmPayment(Ticket $ticket, string $trackingId): bool
+  {
+      $response = Http::withToken($this->pesapalToken())
           ->acceptJson()->timeout(20)
-          ->get("https://api.flutterwave.com/v3/transactions/{$transactionId}/verify");
-      $data = $response->json('data');
+          ->get($this->pesapalUrl('/api/Transactions/GetTransactionStatus'), ['orderTrackingId' => $trackingId]);
+      $data = $response->json();
       $valid = $response->successful()
-          && ($data['status'] ?? null) === 'successful'
-          && (string) ($data['tx_ref'] ?? '') === (string) $ticket->transaction_ref
+          && (int) ($data['status_code'] ?? -1) === 1
+          && (string) ($data['merchant_reference'] ?? '') === (string) $ticket->transaction_ref
           && (float) ($data['amount'] ?? 0) >= (float) $ticket->price
-          && ($data['currency'] ?? null) === config('services.flutterwave.currency', 'UGX');
+          && ($data['currency'] ?? null) === config('services.pesapal.currency', 'UGX');
 
       if ($valid) {
-          $ticket->update(['payment_status' => 'successful', 'status' => 'issued', 'transaction_id' => (string) $transactionId, 'paid_at' => now()]);
+          $ticket->update(['payment_status' => 'successful', 'status' => 'issued', 'transaction_id' => $trackingId, 'paid_at' => now()]);
       }
 
       return $valid;

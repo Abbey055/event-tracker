@@ -39,9 +39,13 @@ services:
         value: stderr
       - key: FILESYSTEM_DISK
         value: local
-      - key: FLW_SECRET_KEY
+      - key: PESAPAL_CONSUMER_KEY
         sync: false
-      - key: FLW_SECRET_HASH
+      - key: PESAPAL_CONSUMER_SECRET
         sync: false
-      - key: FLW_CURRENCY
+      - key: PESAPAL_IPN_ID
+        sync: false
+      - key: PESAPAL_CURRENCY
         value: UGX
+      - key: PESAPAL_ENVIRONMENT
+        value: sandbox

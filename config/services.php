@@ -35,10 +35,12 @@ return [
         ],
     ],
 
-    'flutterwave' => [
-        'secret_key' => env('FLW_SECRET_KEY'),
-        'secret_hash' => env('FLW_SECRET_HASH'),
-        'currency' => env('FLW_CURRENCY', 'UGX'),
+    'pesapal' => [
+        'consumer_key' => env('PESAPAL_CONSUMER_KEY'),
+        'consumer_secret' => env('PESAPAL_CONSUMER_SECRET'),
+        'ipn_id' => env('PESAPAL_IPN_ID'),
+        'currency' => env('PESAPAL_CURRENCY', 'UGX'),
+        'environment' => env('PESAPAL_ENVIRONMENT', 'sandbox'),
     ],
 
 ];
