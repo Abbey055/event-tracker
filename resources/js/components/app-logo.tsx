@@ -1,7 +1,7 @@
 export default function AppLogo() {
     return (
         <>
-            <div className="flex size-12 shrink-0 items-center justify-center overflow-hidden rounded-md bg-white">
+            <div className="flex size-12 shrink-0 items-center justify-center overflow-hidden rounded-md">
                 <img
                     src="/Event%20Tracker.png"
                     alt="Event Tracker"
