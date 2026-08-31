@@ -1,6 +1,6 @@
 import { Head, router, useForm } from '@inertiajs/react';
 import { CalendarIcon, ImagePlus, Pencil, Plus, Trash2, UserRound, Video } from 'lucide-react';
-import { type DragEvent, useRef, useState } from 'react';
+import { type DragEvent, useEffect, useRef, useState } from 'react';
 
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -38,6 +38,19 @@ interface FileDropzoneProps {
 function FileDropzone({ label, accept, file, existingUrl, onChange, icon: Icon }: FileDropzoneProps) {
     const inputRef = useRef<HTMLInputElement>(null);
     const [dragging, setDragging] = useState(false);
+    const [previewUrl, setPreviewUrl] = useState<string | null>(existingUrl ?? null);
+    const isImage = accept.startsWith('image/');
+
+    useEffect(() => {
+        if (!file) {
+            setPreviewUrl(existingUrl ?? null);
+            return;
+        }
+
+        const objectUrl = URL.createObjectURL(file);
+        setPreviewUrl(objectUrl);
+        return () => URL.revokeObjectURL(objectUrl);
+    }, [existingUrl, file]);
 
     const selectFile = (selectedFile: File | undefined) => {
         if (selectedFile) onChange(selectedFile);
@@ -61,7 +74,13 @@ function FileDropzone({ label, accept, file, existingUrl, onChange, icon: Icon }
             className={`cursor-pointer rounded-xl border-2 border-dashed p-5 text-center transition-colors ${dragging ? 'border-primary bg-primary/5' : 'border-muted-foreground/25 hover:border-primary/50 hover:bg-muted/30'}`}
         >
             <input ref={inputRef} type="file" accept={accept} className="hidden" onChange={(event) => selectFile(event.target.files?.[0])} />
-            <Icon className="mx-auto mb-2 h-7 w-7 text-muted-foreground" />
+            {previewUrl && isImage ? (
+                <img src={previewUrl} alt="Selected event" className="mx-auto mb-2 h-24 max-w-full rounded-lg object-cover" />
+            ) : previewUrl ? (
+                <video src={previewUrl} className="mx-auto mb-2 h-24 max-w-full rounded-lg object-cover" muted />
+            ) : (
+                <Icon className="mx-auto mb-2 h-7 w-7 text-muted-foreground" />
+            )}
             <p className="text-sm font-medium">{file?.name ?? label}</p>
             <p className="mt-1 text-xs text-muted-foreground">Drag and drop or click to browse</p>
             {existingUrl && !file && <p className="mt-1 truncate text-xs text-primary">Existing file will be kept</p>}
