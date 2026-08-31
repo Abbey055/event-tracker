@@ -3,6 +3,8 @@ set -e
 
 cd /var/www/html
 
+php artisan storage:link --force
+
 if [ "${RUN_MIGRATIONS:-true}" = "true" ]; then
     php artisan migrate --force
 fi
