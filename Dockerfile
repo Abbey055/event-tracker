@@ -7,14 +7,15 @@ RUN apt-get update \
     && apt-get install -y --no-install-recommends \
         curl git unzip libicu-dev libonig-dev libpq-dev libxml2-dev libzip-dev \
         ca-certificates gnupg \
-    && docker-php-ext-install pdo_pgsql mbstring intl xml zip \
+    && docker-php-ext-install pdo_pgsql mbstring intl xml zip opcache \
     && curl -fsSL https://deb.nodesource.com/setup_22.x | bash - \
     && apt-get install -y --no-install-recommends nodejs \
-    && a2enmod rewrite \
+    && a2enmod rewrite expires headers deflate \
     && sed -i 's/Listen 80/Listen 10000/' /etc/apache2/ports.conf \
     && rm -rf /var/lib/apt/lists/*
 
 COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
+COPY docker/opcache.ini /usr/local/etc/php/conf.d/opcache.ini
 
 WORKDIR /var/www/html
 
