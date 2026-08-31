@@ -75,7 +75,7 @@ export function AppHeader({ breadcrumbs = [] }: Props) {
                                     Navigation menu
                                 </SheetTitle>
                                 <SheetHeader className="flex justify-start text-left">
-                                    <img src="/Event%20Tracker.png" alt="Event Tracker" className="h-12 w-12 object-contain" />
+                                    <img src="/Event%20Tracker.png?v=2" alt="Event Tracker" className="h-12 w-12 object-contain" />
                                 </SheetHeader>
                                 <div className="flex h-full flex-1 flex-col space-y-4 p-4">
                                     <div className="flex h-full flex-col justify-between text-sm">

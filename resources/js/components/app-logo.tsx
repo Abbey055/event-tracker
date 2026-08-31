@@ -3,7 +3,7 @@ export default function AppLogo() {
         <>
             <div className="flex size-12 shrink-0 items-center justify-center overflow-hidden rounded-md">
                 <img
-                    src="/Event%20Tracker.png"
+                    src="/Event%20Tracker.png?v=2"
                     alt="Event Tracker"
                     className="size-full object-contain"
                 />

@@ -30,8 +30,8 @@
             }
         </style>
 
-        <link rel="icon" href="/Event%20Tracker.png" type="image/png">
-        <link rel="apple-touch-icon" href="/Event%20Tracker.png">
+        <link rel="icon" href="/Event%20Tracker.png?v=2" type="image/png">
+        <link rel="apple-touch-icon" href="/Event%20Tracker.png?v=2">
 
         @fonts
 

@@ -17,7 +17,7 @@ export default function AuthSimpleLayout({
                             className="flex flex-col items-center gap-2 font-medium"
                         >
                             <div className="mb-1 flex size-28 items-center justify-center overflow-hidden rounded-xl sm:size-32">
-                                <img src="/Event%20Tracker.png" alt="Event Tracker" className="size-full object-contain" />
+                                <img src="/Event%20Tracker.png?v=2" alt="Event Tracker" className="size-full object-contain" />
                             </div>
                             <span className="sr-only">Event Tracker</span>
                         </Link>
