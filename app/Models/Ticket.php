@@ -15,11 +15,16 @@ class Ticket extends Model
         'price',
         'status',
         'category',
+        'payment_status',
+        'transaction_id',
+        'transaction_ref',
+        'paid_at',
     ];
 
     protected $casts = [
         'is_verified' => 'boolean',
         'verified_at' => 'datetime',
+        'paid_at' => 'datetime',
         'price' => 'decimal:2',
     ];
     protected static function booted()

@@ -60,6 +60,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('/scan', [App\Http\Controllers\User\TicketController::class,'scan'])->name('scan');
         Route::get('/download-image/{ticket}', [App\Http\Controllers\User\TicketController::class,'downloadImage'])->name('download-image');
         Route::get('/verify/{barcode}', [App\Http\Controllers\User\TicketController::class,'verify'])->name('verify');
+        Route::get('/payment/callback', [App\Http\Controllers\User\TicketController::class, 'paymentCallback'])->name('payment.callback');
 
         
 
@@ -69,9 +70,11 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     );
 
-
-
 });
+
+Route::post('/flutterwave/webhook', [App\Http\Controllers\User\TicketController::class, 'paymentWebhook'])
+    ->withoutMiddleware([\Illuminate\Foundation\Http\Middleware\VerifyCsrfToken::class])
+    ->name('payments.flutterwave.webhook');
 
 
 

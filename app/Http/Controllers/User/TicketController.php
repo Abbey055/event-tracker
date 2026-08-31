@@ -4,6 +4,8 @@ namespace App\Http\Controllers\User;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Str;
 use Inertia\Inertia;
 
 use App\Models\User;
@@ -20,7 +22,7 @@ class TicketController extends Controller
   public function index()
   {
 
-  $events = Event::withCount('tickets')
+  $events = Event::withCount(['tickets as tickets_count' => fn ($query) => $query->where('payment_status', 'successful')])
       ->orderBy('event_date')
       ->get()
       ->map(function (Event $event) {
@@ -100,19 +102,46 @@ class TicketController extends Controller
 
     }
 
-    if ($event->capacity !== null && $event->tickets()->count() >= $event->capacity) {
+    if ($event->capacity !== null && $event->tickets()->where('payment_status', 'successful')->count() >= $event->capacity) {
         return back()->with('error', 'This event is sold out.');
     }
 
     $categories = collect($event->ticket_categories ?? []);
     $selectedCategory = $categories->firstWhere('name', $request->input('category')) ?? $categories->first();
+    $price = (float) ($selectedCategory['price'] ?? 0);
+    $transactionRef = 'ET-'.$event->id.'-'.Str::upper(Str::random(16));
 
     $ticket = Ticket :: create ([
         'user_id' =>$user->id,
         'event_id' =>$event->id,
         'category' => $selectedCategory['name'] ?? 'Ordinary',
-        'price' => $selectedCategory['price'] ?? 0,
+        'price' => $price,
+        'payment_status' => $price > 0 ? 'pending' : 'successful',
+        'transaction_ref' => $transactionRef,
+        'paid_at' => $price > 0 ? null : now(),
     ]);
+
+    if ($price > 0) {
+        $payment = Http::withToken((string) config('services.flutterwave.secret_key'))
+            ->acceptJson()
+            ->timeout(20)
+            ->post('https://api.flutterwave.com/v3/payments', [
+                'tx_ref' => $transactionRef,
+                'amount' => $price,
+                'currency' => config('services.flutterwave.currency', 'UGX'),
+                'redirect_url' => route('tickets.payment.callback'),
+                'customer' => ['email' => $user->email, 'name' => $user->name],
+                'customizations' => ['title' => $event->name, 'description' => ($selectedCategory['name'] ?? 'Ordinary').' ticket'],
+                'meta' => ['ticket_id' => $ticket->id],
+            ]);
+
+        if ($payment->failed() || ! $payment->json('data.link')) {
+            $ticket->delete();
+            return back()->with('error', 'We could not start the payment. Please try again.');
+        }
+
+        return Inertia::location($payment->json('data.link'));
+    }
 
     $remainingTickets = $event->capacity === null
         ? null
@@ -139,6 +168,60 @@ class TicketController extends Controller
 
     return  back ()->with('success', 'successfully registered for the event');
 
+  }
+
+  public function paymentCallback(Request $request)
+  {
+      $ticket = Ticket::where('transaction_ref', $request->string('tx_ref')->toString())->first();
+
+      if (! $ticket || $ticket->user_id !== auth()->id() || ! $request->integer('transaction_id')) {
+          return redirect()->route('tickets.index')->with('error', 'We could not confirm that payment.');
+      }
+
+      if ($request->string('status')->toString() !== 'successful') {
+          $ticket->update(['payment_status' => 'failed', 'status' => 'payment_failed']);
+          return redirect()->route('tickets.index')->with('error', 'Payment was not completed.');
+      }
+
+      if ($this->confirmPayment($ticket, $request->integer('transaction_id'))) {
+          return redirect()->route('tickets.index')->with('success', 'Payment confirmed. Your ticket is ready.');
+      }
+
+      return redirect()->route('tickets.index')->with('error', 'Payment could not be verified. Please contact support.');
+  }
+
+  public function paymentWebhook(Request $request)
+  {
+      $signature = (string) $request->header('flutterwave-signature');
+      $expected = base64_encode(hash_hmac('sha256', $request->getContent(), (string) config('services.flutterwave.secret_hash'), true));
+      abort_unless($signature !== '' && hash_equals($expected, $signature), 401);
+
+      $ticket = Ticket::where('transaction_ref', (string) $request->input('data.tx_ref'))->first();
+      $transactionId = $request->integer('data.id');
+      if ($ticket && $transactionId) {
+          $this->confirmPayment($ticket, $transactionId);
+      }
+
+      return response()->json(['received' => true]);
+  }
+
+  private function confirmPayment(Ticket $ticket, int $transactionId): bool
+  {
+      $response = Http::withToken((string) config('services.flutterwave.secret_key'))
+          ->acceptJson()->timeout(20)
+          ->get("https://api.flutterwave.com/v3/transactions/{$transactionId}/verify");
+      $data = $response->json('data');
+      $valid = $response->successful()
+          && ($data['status'] ?? null) === 'successful'
+          && (string) ($data['tx_ref'] ?? '') === (string) $ticket->transaction_ref
+          && (float) ($data['amount'] ?? 0) >= (float) $ticket->price
+          && ($data['currency'] ?? null) === config('services.flutterwave.currency', 'UGX');
+
+      if ($valid) {
+          $ticket->update(['payment_status' => 'successful', 'status' => 'issued', 'transaction_id' => (string) $transactionId, 'paid_at' => now()]);
+      }
+
+      return $valid;
   }
 
   public function verify ($barcode){

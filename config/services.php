@@ -35,4 +35,10 @@ return [
         ],
     ],
 
+    'flutterwave' => [
+        'secret_key' => env('FLW_SECRET_KEY'),
+        'secret_hash' => env('FLW_SECRET_HASH'),
+        'currency' => env('FLW_CURRENCY', 'UGX'),
+    ],
+
 ];

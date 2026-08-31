@@ -39,3 +39,9 @@ services:
         value: stderr
       - key: FILESYSTEM_DISK
         value: local
+      - key: FLW_SECRET_KEY
+        sync: false
+      - key: FLW_SECRET_HASH
+        sync: false
+      - key: FLW_CURRENCY
+        value: UGX
