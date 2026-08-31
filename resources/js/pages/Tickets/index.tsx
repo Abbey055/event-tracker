@@ -72,6 +72,8 @@ interface EventNotification {
     message: string;
     read_at: string | null;
     created_at: string;
+    category?: string;
+    price?: string | number;
 }
 
 interface Ticket {
@@ -93,10 +95,11 @@ export default function TicketsIndex({ events, userTickets, notifications = [] }
     const { auth } = usePage().props;
     const [selectedTicket, setSelectedTicket] = useState<Ticket | null>(null);
     const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
+    const [selectedCategory, setSelectedCategory] = useState('Ordinary');
     const hiddenQrRef = useRef<HTMLDivElement>(null);
 
-    const handleRegister = (eventId: number) => {
-        router.post(`/tickets/register/${eventId}`);
+    const handleRegister = (eventId: number, category?: string) => {
+        router.post(`/tickets/register/${eventId}`, { category });
     };
 
     const showQRCode = (ticket: Ticket) => {
@@ -442,7 +445,7 @@ export default function TicketsIndex({ events, userTickets, notifications = [] }
                                                 )}
                                             </div>
                                             <Button
-                                                onClick={() => setSelectedEvent(event)}
+                                                onClick={() => { setSelectedEvent(event); setSelectedCategory(event.ticket_categories?.[0]?.name ?? 'Ordinary'); }}
                                                 disabled={isRegistered}
                                                 className={`h-9 w-full font-semibold shadow-sm transition-all ${
                                                     isRegistered
@@ -649,10 +652,10 @@ export default function TicketsIndex({ events, userTickets, notifications = [] }
                             {selectedEvent.ticket_categories && selectedEvent.ticket_categories.length > 0 ? (
                                 <div className="grid gap-2 sm:grid-cols-2">
                                     {selectedEvent.ticket_categories.map((category) => (
-                                        <div key={category.name} className="flex items-center justify-between rounded-lg border p-3 text-sm">
+                                        <button type="button" key={category.name} onClick={() => setSelectedCategory(category.name)} className={`flex items-center justify-between rounded-lg border p-3 text-left text-sm transition ${selectedCategory === category.name ? 'border-primary bg-primary/5 ring-1 ring-primary' : 'hover:bg-muted/50'}`}>
                                             <span>{category.name}</span>
                                             <span className="font-semibold">{category.price === 0 ? 'Free' : `${category.price.toLocaleString()} UGX`}</span>
-                                        </div>
+                                        </button>
                                     ))}
                                 </div>
                             ) : (
@@ -675,7 +678,7 @@ export default function TicketsIndex({ events, userTickets, notifications = [] }
                                 {selectedEvent.is_following ? <BellRing className="mr-2 h-4 w-4" /> : <Bell className="mr-2 h-4 w-4" />}
                                 {selectedEvent.is_following ? 'Following' : 'Follow event'}
                             </Button>
-                            <Button type="button" onClick={() => { handleRegister(selectedEvent.id); setSelectedEvent(null); }} disabled={(selectedEvent.available_tickets !== null && selectedEvent.available_tickets !== undefined && selectedEvent.available_tickets <= 0) || userTickets.some((ticket) => ticket.event.id === selectedEvent.id)}>
+                            <Button type="button" onClick={() => { handleRegister(selectedEvent.id, selectedCategory); setSelectedEvent(null); }} disabled={(selectedEvent.available_tickets !== null && selectedEvent.available_tickets !== undefined && selectedEvent.available_tickets <= 0) || userTickets.some((ticket) => ticket.event.id === selectedEvent.id)}>
                                 {userTickets.some((ticket) => ticket.event.id === selectedEvent.id) ? 'Registered' : 'Get Ticket'}
                             </Button>
                         </div>

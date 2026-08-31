@@ -88,6 +88,7 @@ class TicketController extends Controller
 
   public function register (Request $request, Event $event){
     $user = auth()->user();
+    $request->validate(['category' => 'nullable|string|in:VIP,Ordinary,VVIP']);
 
 
     $existingTicket = Ticket ::where('user_id', $user->id)->where('event_id', $event->id)->first();
@@ -103,9 +104,14 @@ class TicketController extends Controller
         return back()->with('error', 'This event is sold out.');
     }
 
+    $categories = collect($event->ticket_categories ?? []);
+    $selectedCategory = $categories->firstWhere('name', $request->input('category')) ?? $categories->first();
+
     $ticket = Ticket :: create ([
         'user_id' =>$user->id,
         'event_id' =>$event->id,
+        'category' => $selectedCategory['name'] ?? 'Ordinary',
+        'price' => $selectedCategory['price'] ?? 0,
     ]);
 
     $remainingTickets = $event->capacity === null

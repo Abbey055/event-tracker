@@ -23,6 +23,7 @@ interface Event {
     capacity?: number;
     image_url?: string | null;
     video_url?: string | null;
+    ticket_categories?: { name: string; price: number }[] | null;
 }
 
 interface FileDropzoneProps {
@@ -92,6 +93,11 @@ export default function Events({ events }: Props) {
         video_url: '',
         image: null as File | null,
         video: null as File | null,
+        ticket_categories: [
+            { name: 'VIP', price: '' },
+            { name: 'Ordinary', price: '' },
+            { name: 'VVIP', price: '' },
+        ],
     });
 
     const openCreateDialog = () => {
@@ -114,6 +120,11 @@ export default function Events({ events }: Props) {
             video_url: event.video_url ?? '',
             image: null,
             video: null,
+            ticket_categories: event.ticket_categories?.length ? event.ticket_categories.map((category) => ({ name: category.name, price: String(category.price) })) : [
+                { name: 'VIP', price: '' },
+                { name: 'Ordinary', price: '' },
+                { name: 'VVIP', price: '' },
+            ],
         });
         setShowDialog(true);
     };
@@ -244,6 +255,18 @@ export default function Events({ events }: Props) {
                             <div className="space-y-2">
                                 <Label htmlFor="organizer_email">Organizer email</Label>
                                 <Input id="organizer_email" type="email" value={data.organizer_email} onChange={(event) => setData('organizer_email', event.target.value)} placeholder="organizer@example.com" />
+                            </div>
+                            <div className="space-y-2 sm:col-span-2">
+                                <Label>Ticket fees (UGX)</Label>
+                                <div className="grid gap-3 sm:grid-cols-3">
+                                    {data.ticket_categories.map((category, index) => (
+                                        <div key={category.name} className="space-y-1.5">
+                                            <Label htmlFor={`ticket-category-${category.name}`} className="text-xs text-muted-foreground">{category.name}</Label>
+                                            <Input id={`ticket-category-${category.name}`} type="number" min="0" placeholder="0 for free" value={category.price} onChange={(event) => setData('ticket_categories', data.ticket_categories.map((item, itemIndex) => itemIndex === index ? { ...item, price: event.target.value } : item))} />
+                                        </div>
+                                    ))}
+                                </div>
+                                {errors.ticket_categories && <p className="text-sm text-destructive">Enter a valid fee for each ticket category.</p>}
                             </div>
                             <div className="space-y-2 sm:col-span-2">
                                 <Label>Event image</Label>

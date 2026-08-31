@@ -50,6 +50,8 @@ class EventController extends Controller
         'image' => 'nullable|file|image|max:10240',
         'video' => 'nullable|file|mimetypes:video/mp4,video/webm,video/quicktime|max:51200',
         'ticket_categories' => 'nullable|array',
+        'ticket_categories.*.name' => 'required|string|in:VIP,Ordinary,VVIP',
+        'ticket_categories.*.price' => 'required|numeric|min:0',
     ]);
     $validated = $this->storeUploads($request, $validated);
     Event::create($validated);
@@ -80,6 +82,8 @@ class EventController extends Controller
         'image' => 'nullable|file|image|max:10240',
         'video' => 'nullable|file|mimetypes:video/mp4,video/webm,video/quicktime|max:51200',
         'ticket_categories' => 'nullable|array',
+        'ticket_categories.*.name' => 'required|string|in:VIP,Ordinary,VVIP',
+        'ticket_categories.*.price' => 'required|numeric|min:0',
     ]);
 
     $oldImage = $event->image_url;

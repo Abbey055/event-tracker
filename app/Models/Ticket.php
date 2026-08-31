@@ -14,6 +14,7 @@ class Ticket extends Model
         'verified_at',
         'price',
         'status',
+        'category',
     ];
 
     protected $casts = [
