@@ -20,7 +20,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('scanner', function () {
             abort_unless(auth()->user()->isAdmin(), 403);
             return Inertia::render('Admin/Scanner');
-        })->name('admin.scanner');
+        })->name('admin.scanner.page');
     });
 
     Route::prefix('admin')->name('admin.')->group(function () {
