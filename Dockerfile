@@ -18,13 +18,11 @@ COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 
 WORKDIR /var/www/html
 
-COPY composer.json composer.lock ./
+COPY . .
+
 RUN composer install --no-dev --no-interaction --prefer-dist --optimize-autoloader
 
-COPY package.json package-lock.json ./
 RUN npm ci
-
-COPY . .
 
 # The frontend route generator needs a bootable application during the image build.
 RUN cp .env.example .env \
